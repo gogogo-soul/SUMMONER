@@ -1,0 +1,1554 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b0e13">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SUMMONER">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
+<title>SUMMONER — TCG Playtest</title>
+<style>
+:root{
+  --bg:#0b0e13;--panel:#151a22;--panel2:#1c222c;--line:#343c48;
+  --text:#eef2f7;--muted:#9aa5b4;--accent:#69b7ff;--gold:#e8c66a;
+}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+button{font:inherit;color:inherit}
+#app{height:100%;display:flex;flex-direction:column}
+
+.topbar {
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
+  background: #11151c;
+  border-bottom: 1px solid var(--line);
+  flex: 0 0 auto;
+}
+.brand { font-weight: 900; letter-spacing: .08em; font-size: 16px; color: #eef2f7; }
+.top-info { display: flex; gap: 18px; color: var(--muted); font-size: 12px; }
+
+.nav-btn {
+  background: #246e9f;
+  border: 1px solid #5aade0;
+  color: #fff;
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: bold;
+  transition: .2s;
+}
+.nav-btn:hover { background: #3082ba; }
+.nav-btn.btn-sub { background: #242b35; border-color: #46505e; }
+.nav-btn.btn-sub:hover { background: #303a47; }
+
+.main{min-height:0;flex:1;display:grid;grid-template-columns:minmax(0,1fr) 225px;gap:6px;padding:6px}
+.table{min-width:0;min-height:0;position:relative;display:flex;flex-direction:column;border:1px solid #313945;border-radius:12px;overflow-y:auto;background:radial-gradient(circle at 50% 50%,#27303a 0,#171d25 48%,#10141a 100%)}
+.half{min-height:0;display:flex;flex-direction:column;padding:8px 12px;gap:6px;flex:1 0 auto}
+.cpu-half{border-bottom:1px solid #4a5260}
+.you-half{border-top:1px solid #4a5260}
+.player-head{position:relative;display:flex;align-items:center;justify-content:space-between;font-size:14px;color:var(--muted);flex:0 0 auto}
+.player-head .who{color:var(--text);font-weight:800;font-size:16px}
+
+.hp{font-size:28px;font-weight:900;color:#ff8b8b;cursor:pointer;padding:2px 8px;border-radius:6px;transition:.2s;user-select:none}
+.hp:hover{background:#ff8b8b22;text-shadow:0 0 8px #ff8b8b}
+
+.dmg-pop{
+  position:absolute; right:120px; top:-8px; color:#ff3333; font-size:26px; font-weight:900;
+  text-shadow:0 0 6px #000, 0 0 10px rgba(255,0,0,0.8); opacity:0; pointer-events:none; z-index:99;
+}
+.dmg-pop.active{ animation:popAnim 1s ease-out forwards; }
+@keyframes popAnim{
+  0%{opacity:1;transform:translateY(0) scale(0.8);}
+  20%{opacity:1;transform:translateY(-8px) scale(1.3);}
+  80%{opacity:1;transform:translateY(-12px) scale(1.1);}
+  100%{opacity:0;transform:translateY(-18px) scale(1);}
+}
+
+.card-dmg-pop {
+  position: absolute; top: 35%; left: 50%; transform: translate(-50%, -50%);
+  color: #ff3333; font-size: 26px; font-weight: 900; text-shadow: 0 0 4px #000, 0 0 8px rgba(255, 0, 0, 0.9);
+  pointer-events: none; z-index: 999; white-space: nowrap; animation: cardPopAnim 1s ease-out forwards;
+}
+@keyframes cardPopAnim {
+  0% { opacity: 1; transform: translate(-50%, -35%) scale(0.8); }
+  20% { opacity: 1; transform: translate(-50%, -55%) scale(1.3); }
+  75% { opacity: 1; transform: translate(-50%, -70%) scale(1.1); }
+  100% { opacity: 0; transform: translate(-50%, -85%) scale(1); }
+}
+
+.zone-row{min-height:140px;flex:1;display:grid;grid-template-columns:1fr 90px;grid-template-rows:1fr 1fr;gap:8px}
+.zonebox{min-width:0;min-height:0;display:flex;flex-direction:column;justify-content:center}
+.zone-label{font-size:10px;color:#7f8998;text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px;display:flex;align-items:center;gap:6px}
+.cards{display:flex;align-items:center;gap:7px;min-height:0;flex:1;overflow-x:auto;padding:2px 2px}
+.field-cards{min-height:0}
+.centerbar{display:flex;align-items:center;justify-content:center;gap:14px;background:#0d1117aa;border-top:1px solid #3b4450;border-bottom:1px solid #3b4450;padding:6px 0;flex:0 0 auto}
+.turn-pill{padding:6px 18px;border-radius:999px;background:#222a34;border:1px solid #4a5563;font-size:12px;font-weight:800}
+.phase{font-size:11px;color:var(--muted)}
+.card{position:relative;flex:0 0 84px;width:84px;height:112px;aspect-ratio:3/4;border-radius:8px;border:2px solid #66717f;background:linear-gradient(145deg,#303945,#171c23);padding:6px;cursor:pointer;box-shadow:0 4px 10px #0008;transition:.12s}
+.card:hover{transform:translateY(-7px);z-index:3;border-color:#d8e3ee}
+.card.monster{background:linear-gradient(145deg,#4a3a2d,#1d1916);border-color:#a68764}
+.card.spell{background:linear-gradient(145deg,#3b385c,#191827);border-color:#8a82ca}
+.card.land{background:linear-gradient(145deg,#2c4937,#151d18);border-color:#6caa7a}
+
+.card.color-red{background:linear-gradient(145deg,#b93a32,#4a1111)!important;border-color:#ff766d!important}
+.card.color-blue{background:linear-gradient(145deg,#2f79b5,#102b46)!important;border-color:#78c7ff!important}
+.card.color-green{background:linear-gradient(145deg,#33804e,#11351e)!important;border-color:#78e39a!important}
+.card.color-yellow{background:linear-gradient(145deg,#b08e25,#4a3b0b)!important;border-color:#ffe275!important}
+.card.color-black{background:linear-gradient(145deg,#4b4055,#141017)!important;border-color:#d0adff!important}
+.card.color-red .art{background:linear-gradient(135deg,#ff7d7044,#0008)}
+.card.color-blue .art{background:linear-gradient(135deg,#6fc5ff44,#0008)}
+.card.color-green .art{background:linear-gradient(135deg,#71eb9444,#0008)}
+.card.color-yellow .art{background:linear-gradient(135deg,#ffe87944,#0008)}
+.card.color-black .art{background:linear-gradient(135deg,#d7b7ff44,#0008)}
+
+.card.face{background:#252a31}
+.card .name{font-size:10px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:18px}
+.card .type{font-size:8px;color:#aeb7c3;margin-top:1px}
+.card .cost{position:absolute;right:4px;top:4px;background:#2b80b9;border-radius:50%;min-width:18px;text-align:center;padding:1px 3px;font-size:9px;font-weight:900}
+.card .art{height:38px;margin:3px 0;border-radius:5px;background:linear-gradient(135deg,#ffffff12,#0005);border:1px solid #ffffff12;display:flex;align-items:center;justify-content:center;font-size:18px}
+.card .rules{font-size:8px;line-height:1.2;color:#d2d8df;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.card .stats{position:absolute;right:4px;bottom:4px;font-size:9px;font-weight:900}
+.card.selected{outline:3px solid var(--gold);transform:translateY(-8px)}
+.card.tapped{transform:rotate(90deg) translateY(-2px);opacity:.8}
+.card.affordable-red{box-shadow:0 0 8px rgba(105, 183, 255, 0.85); border-width:2px;}
+
+.card-controls{
+  position:absolute;left:4px;bottom:3px;display:flex;gap:3px;z-index:8;
+}
+.card-controls button{
+  width:20px;height:20px;padding:0;border-radius:50%;border:1px solid #d9e2ec;
+  background:#111a;color:#fff;font-size:12px;font-weight:900;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;line-height:1;
+}
+.card-controls button:hover{background:#2d3947}
+.card-controls .ability-btn{border-color:#ffd166;background:#4b3b13}
+.card.tapped .card-controls{opacity:.95}
+
+
+.back{background:repeating-linear-gradient(45deg,#17283c 0 6px,#1e3852 6px 12px)!important;border-color:#50789c!important;}
+.side{min-height:0;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px;display:flex;flex-direction:column;gap:7px}
+.side h2{font-size:12px;margin:0;color:#b9c2ce;text-transform:uppercase;letter-spacing:.08em}
+.inspector{background:#10151c;border:1px solid #303946;border-radius:10px;padding:9px;min-height:125px}
+.inspector .big{font-size:18px;font-weight:900}.inspector .sub{font-size:11px;color:var(--muted);margin:2px 0 10px}.inspector p{font-size:11px;line-height:1.45;color:#d5dbe3;margin:0}
+.statgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.stat{background:#10151c;border:1px solid #303946;border-radius:8px;padding:7px}.stat b{display:block;font-size:16px}.stat span{font-size:9px;color:var(--muted)}
+
+.log{flex:1;min-height:100px;overflow:auto;background:#0d1117;border:1px solid #303946;border-radius:8px;padding:8px;font-size:13px;line-height:1.4}
+.log div{margin:5px 0;color:#bbc4cf}
+
+.actions{display:flex;flex-wrap:wrap;gap:6px}.actions button{flex:1;border:1px solid #46505e;background:#242b35;border-radius:7px;padding:8px 6px;font-size:11px;cursor:pointer}.actions button:hover{background:#303a47}.actions .primary{background:#246e9f;border-color:#5aade0}
+.handbar{height:184px;flex:0 0 auto;background:#10141b;border-top:1px solid #303844;padding:8px 14px;display:flex;align-items:center;gap:10px}
+.hand-info{width:82px;flex:0 0 82px;font-size:10px;color:var(--muted)}.hand-info b{display:block;color:var(--text);font-size:15px;margin-bottom:4px}
+.hand{min-width:0;flex:1;display:flex;align-items:flex-end;gap:8px;overflow-x:auto;height:168px;padding:10px 8px 2px}
+.hand .card{flex-basis:112px;width:112px;height:149px;aspect-ratio:3/4}.hand .card .art{height:58px}.hand .card .rules{-webkit-line-clamp:4;font-size:9px}
+.toast{position:fixed;left:50%;top:60px;transform:translateX(-50%);background:#171c24;border:1px solid #687585;border-radius:99px;padding:10px 18px;display:none;z-index:50;box-shadow:0 10px 30px #0009;font-size:12px}
+.modal{position:fixed;inset:0;background:#000a;display:none;align-items:center;justify-content:center;z-index:40}.modalbox{width:min(620px,92vw);background:#1a2029;border:1px solid #596575;border-radius:12px;padding:18px}.modalbox h3{margin:0 0 12px}.targets{display:flex;gap:8px;flex-wrap:wrap}.targets button{border:1px solid #596575;background:#252e39;border-radius:8px;padding:9px 12px;cursor:pointer}
+@media(max-width:900px){.main{grid-template-columns:1fr}.side{display:none}.handbar{height:170px}.hand{height:154px}.hand .card{height:136px;width:102px}.card{flex-basis:82px;width:82px;height:109px}}
+
+.resource-col{display:flex;flex-direction:column;gap:6px;justify-content:center}
+.resource-zone{width:100%;height:100%;max-height:80px;border:1px solid #3d4552;border-radius:8px;background:#10151c;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:inset 0 0 0 1px #161c24}
+.resource-zone b{font-size:9px;color:#8e98a7;letter-spacing:.8px}.resource-zone span{font-size:16px;font-weight:800;margin-top:2px}
+.resource-zone#youGraveZone,.resource-zone#cpuGraveZone{cursor:pointer}
+.resource-zone#youGraveZone:hover,.resource-zone#cpuGraveZone:hover{border-color:#697586}
+
+.opponent-hand-wrap{margin-top:8px;padding:6px 8px;background:#10141b;border:1px solid #303844;border-radius:8px;flex:0 0 auto}
+.opponent-hand-title{font-size:10px;color:#8e98a7;margin-bottom:5px}
+.opponent-hand{display:flex;align-items:flex-end;gap:8px;overflow-x:auto;height:160px;padding:4px 8px 2px}
+.opponent-hand .card{flex-basis:112px;width:112px;height:149px;aspect-ratio:3/4}
+.opponent-hand .card .art{height:58px}
+.opponent-hand .card .rules{-webkit-line-clamp:4;font-size:9px}
+
+.mana-pool-container { display: inline-flex; gap: 4px; align-items: center; margin-left: 6px; }
+.mana-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px; border-radius: 50%; font-size: 10px; font-weight: bold; color: #fff;
+  box-shadow: 0 0 4px rgba(0,0,0,0.6);
+}
+.mana-icon.red { background: #e74c3c; }
+.mana-icon.blue { background: #3498db; }
+.mana-icon.yellow { background: #f1c40f; color: #000; }
+.mana-icon.green { background: #2ecc71; }
+.mana-icon.black { background: #9b59b6; }
+.mana-icon.colorless { background: #7f8c8d; }
+
+/* 対戦開始デッキ選択 */
+.deck-setup{
+  position:fixed;inset:0;z-index:5000;background:rgba(5,8,12,.94);
+  display:flex;align-items:center;justify-content:center;padding:24px
+}
+.deck-setup.hidden{display:none}
+.deck-setup-box{
+  width:min(720px,94vw);background:#151a22;border:1px solid #46505e;border-radius:16px;
+  box-shadow:0 24px 80px #000;padding:24px
+}
+.deck-setup-title{font-size:25px;font-weight:900;letter-spacing:.08em;margin-bottom:6px}
+.deck-setup-sub{font-size:12px;color:#9aa5b4;margin-bottom:20px}
+.deck-choice-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.deck-choice{background:#10151c;border:1px solid #303946;border-radius:10px;padding:14px}
+.deck-choice h3{margin:0 0 10px;font-size:14px}
+.deck-choice select{
+  width:100%;background:#1a202c;border:1px solid #46505e;color:#fff;border-radius:7px;padding:9px
+}
+.deck-choice .deck-info{margin-top:8px;color:#9aa5b4;font-size:11px;min-height:18px}
+.start-battle-btn{
+  width:100%;margin-top:18px;padding:11px;border-radius:8px;border:1px solid #5aade0;
+  background:#246e9f;color:#fff;font-weight:900;cursor:pointer
+}
+.start-battle-btn:hover{background:#3082ba}
+@media(max-width:650px){.deck-choice-grid{grid-template-columns:1fr}}
+
+
+.stack-box{
+  background:#0d1117;border:1px solid #303946;border-radius:8px;padding:7px;
+  min-height:54px;max-height:116px;overflow-y:auto;font-size:10px
+}
+.stack-empty{color:#697586;padding:9px;text-align:center}
+.stack-entry{
+  display:flex;justify-content:space-between;gap:8px;padding:5px 7px;margin:3px 0;
+  background:#171e27;border:1px solid #384453;border-radius:6px
+}
+.stack-entry.top{border-color:#e8c66a;box-shadow:0 0 0 1px #e8c66a33}
+.stack-owner{color:#9aa5b4;white-space:nowrap}
+.priority-line{font-size:10px;color:#aeb8c5;margin-top:5px}
+.actions .stack-pass{background:#543e12;border-color:#b78b2f}
+.actions .stack-pass:disabled{opacity:.45;cursor:not-allowed}
+.card-controls .locked-btn{opacity:.55;border-color:#777;cursor:not-allowed}
+
+
+.mobile-actions{display:none}
+.mobile-hand-toggle{display:none}
+
+@media(max-width:900px){
+  html,body{
+    width:100%;height:auto;min-height:100%;
+    overflow:auto;
+    overscroll-behavior-y:contain;
+    -webkit-text-size-adjust:100%;
+  }
+  body{padding-bottom:calc(204px + env(safe-area-inset-bottom))}
+  body.hand-collapsed{padding-bottom:calc(100px + env(safe-area-inset-bottom))}
+  #app{height:auto;min-height:100dvh}
+
+  .topbar{
+    height:auto;min-height:48px;padding:7px 8px;
+    flex-wrap:wrap;gap:6px;position:sticky;top:0;z-index:35
+  }
+  .brand{font-size:13px}
+  .top-info{display:none}
+  .nav-btn{font-size:10px;padding:6px 8px}
+
+  .main{
+    min-height:auto;overflow:visible;
+    display:flex;flex-direction:column;
+    padding:4px;gap:6px
+  }
+  .table{
+    overflow:visible;min-height:auto;border-radius:8px
+  }
+  .half{padding:6px 5px;gap:5px}
+  .player-head .who{font-size:14px}
+  .hp{font-size:22px;padding:2px 5px}
+  .zone-row{
+    min-height:0;
+    grid-template-columns:minmax(0,1fr) 64px;
+    grid-template-rows:auto auto;
+    gap:5px
+  }
+  .resource-col{gap:4px}
+  .resource-zone{min-height:45px;padding:5px 3px}
+  .resource-zone b{font-size:7px}
+  .resource-zone span{font-size:15px}
+  .zone-label{font-size:9px}
+  .cards{min-height:105px;gap:5px;scrollbar-width:thin}
+  .card{
+    flex:0 0 74px;width:74px;height:99px;
+    padding:5px;border-radius:7px
+  }
+  .card:hover{transform:none}
+  .card.selected{transform:translateY(-3px)}
+  .card .name{font-size:9px}
+  .card .type{font-size:7px}
+  .card .cost{min-width:16px;font-size:8px}
+  .card .art{height:31px;font-size:15px}
+  .card .rules{font-size:7px;-webkit-line-clamp:2}
+  .card .stats{font-size:8px}
+  .card-controls button{width:24px;height:24px;font-size:13px}
+
+  .opponent-hand-wrap{padding:4px 0 1px}
+  .opponent-hand-title{font-size:9px}
+  .opponent-hand{gap:5px;padding:5px 2px;overflow-x:auto}
+  .opponent-hand .card{
+    flex:0 0 82px;width:82px;height:109px
+  }
+  .opponent-hand .card .art{height:37px}
+  .opponent-hand .card .rules{-webkit-line-clamp:2;font-size:7px}
+
+  .centerbar{
+    position:sticky;top:48px;z-index:24;
+    gap:8px;padding:5px;background:#0d1117e8
+  }
+  .turn-pill{padding:5px 10px;font-size:10px}
+  .phase{font-size:9px}
+
+  /* PCでは右側だった情報欄を、スマホでは盤面の下に表示 */
+  .side{
+    display:flex!important;
+    min-height:auto;
+    padding:7px;gap:6px;border-radius:8px
+  }
+  .side h2{font-size:10px}
+  .inspector{min-height:90px}
+  .inspector .big{font-size:16px}
+  .inspector p{font-size:10px}
+  .stack-box{max-height:100px}
+  .log{min-height:90px;max-height:150px;font-size:11px}
+  .side .actions{display:none}
+
+  /* PLAYER 1の手札を画面下部に固定 */
+  .handbar{
+    position:fixed;left:0;right:0;
+    bottom:calc(52px + env(safe-area-inset-bottom));
+    z-index:30;
+    height:152px;
+    padding:6px 6px;
+    gap:6px;
+    background:#10141bf5;
+    box-shadow:0 -8px 20px #0008
+  }
+  .hand-info{
+    width:64px;flex:0 0 64px;
+    font-size:8px
+  }
+  .hand-info b{font-size:11px}
+  .hand{height:140px;padding:5px 2px;gap:6px}
+  .hand .card{
+    flex:0 0 88px;width:88px;height:117px
+  }
+  .hand .card .art{height:40px}
+  .hand .card .rules{-webkit-line-clamp:3;font-size:7px}
+
+  .mobile-hand-toggle{
+    display:block;margin-top:6px;width:100%;
+    border:1px solid #46505e;background:#242b35;color:#fff;
+    border-radius:5px;padding:4px 2px;font-size:8px
+  }
+
+  body.hand-collapsed .handbar{height:48px}
+  body.hand-collapsed .hand{display:none}
+  body.hand-collapsed .hand-info{
+    width:100%;flex:1;display:flex;align-items:center;gap:10px
+  }
+  body.hand-collapsed .hand-info br,
+  body.hand-collapsed .hand-info>span:not(#handCount){display:none}
+  body.hand-collapsed .mobile-hand-toggle{
+    width:auto;margin:0 0 0 auto;padding:5px 10px
+  }
+
+  /* スマホ専用の常時表示操作バー */
+  .mobile-actions{
+    display:grid;
+    grid-template-columns:repeat(6,1fr);
+    gap:3px;
+    position:fixed;left:0;right:0;bottom:0;
+    z-index:32;
+    min-height:52px;
+    padding:5px 5px calc(5px + env(safe-area-inset-bottom));
+    background:#0d1117f7;border-top:1px solid #46505e
+  }
+  .mobile-actions button{
+    min-width:0;border:1px solid #46505e;background:#242b35;
+    color:#fff;border-radius:6px;padding:7px 2px;
+    font-size:8px;font-weight:800;line-height:1.1
+  }
+  .mobile-actions .primary{background:#246e9f;border-color:#5aade0}
+  .mobile-actions .pass{background:#543e12;border-color:#b78b2f}
+
+  .modal{align-items:flex-end}
+  .modalbox{
+    width:100%;max-height:80dvh;overflow:auto;
+    border-radius:14px 14px 0 0;
+    padding:16px 14px calc(16px + env(safe-area-inset-bottom))
+  }
+  .targets{display:grid;grid-template-columns:1fr;gap:7px}
+  .targets button{min-height:44px;text-align:left}
+
+  .deck-setup{padding:10px;align-items:flex-start;overflow:auto}
+  .deck-setup-box{margin-top:20px;padding:16px}
+  .deck-setup-title{font-size:20px}
+  .deck-choice-grid{grid-template-columns:1fr}
+  .deck-choice select,.start-battle-btn{min-height:44px}
+}
+
+@media(max-width:900px) and (max-height:520px){
+  body{padding-bottom:calc(158px + env(safe-area-inset-bottom))}
+  body.hand-collapsed{padding-bottom:calc(92px + env(safe-area-inset-bottom))}
+  .handbar{
+    height:108px;
+    bottom:calc(46px + env(safe-area-inset-bottom))
+  }
+  .hand{height:96px}
+  .hand .card{flex-basis:72px;width:72px;height:96px}
+  .hand .card .art{height:28px}
+  .mobile-actions{min-height:46px}
+  .mobile-actions button{padding:5px 2px}
+  .cards{min-height:92px}
+}
+
+</style>
+</head>
+<body>
+<div id="app">
+<header class="topbar">
+  <div class="brand">SUMMONER — BATTLE</div>
+  <div style="display:flex; gap:8px;">
+    <a href="deckbuilder.html" class="nav-btn btn-sub">デッキ編集</a>
+    <a href="index.html" class="nav-btn">タイトルへ</a>
+  </div>
+  <div class="top-info"><span>PLAYTEST</span><span id="topDeck">60 CARDS</span><span id="topTurn">TURN 1</span></div>
+</header>
+
+<main class="main">
+<section class="table">
+  <div class="half cpu-half">
+    <div class="player-head">
+      <span class="who">PLAYER 2</span>
+      <span class="hp" id="cpuHp" title="攻撃時にここをタップ">20 LP</span>
+      <div class="dmg-pop" id="cpuDmgPop"></div>
+    </div>
+    <div class="zone-row">
+      <div class="zonebox">
+        <div class="zone-label">Leylines <span id="cpuManaPool" class="mana-pool-container"></span></div>
+        <div class="cards" id="cpuLands"></div>
+      </div>
+      <div class="resource-col">
+        <div class="resource-zone" id="cpuGraveZone"><b>GRAVEYARD</b><span id="cpuGrave">0</span></div>
+      </div>
+      <div class="zonebox"><div class="zone-label">Battlefield</div><div class="cards field-cards" id="cpuField"></div></div>
+      <div class="resource-col">
+        <div class="resource-zone" id="cpuDeckZone"><b>DECK</b><span id="cpuDeck">60</span></div>
+        <div class="resource-zone" style="height:36px"><b>HAND</b><span id="cpuHand" style="font-size:13px;margin-top:0">0</span></div>
+      </div>
+    </div>
+    <div class="opponent-hand-wrap"><div class="opponent-hand-title">PLAYER 2 HAND <span id="cpuHandCount">7 cards</span></div><div class="opponent-hand" id="cpuHandCards"></div></div>
+  </div>
+
+  <div class="centerbar"><span class="turn-pill" id="turnPill">PLAYER 1 TURN</span><span class="phase" id="phase">MAIN PHASE</span></div>
+
+  <div class="half you-half">
+    <div class="player-head">
+      <span class="who">PLAYER 1</span>
+      <span class="hp" id="youHp">20 LP</span>
+      <div class="dmg-pop" id="youDmgPop"></div>
+    </div>
+    <div class="zone-row">
+      <div class="zonebox"><div class="zone-label">Battlefield</div><div class="cards field-cards" id="youField"></div></div>
+      <div class="resource-col">
+        <div class="resource-zone" id="youDeckZone"><b>DECK</b><span id="youDeck">60</span></div>
+      </div>
+      <div class="zonebox">
+        <div class="zone-label">Leylines <span id="youManaPool" class="mana-pool-container"></span></div>
+        <div class="cards" id="youLands"></div>
+      </div>
+      <div class="resource-col">
+        <div class="resource-zone" id="youGraveZone"><b>GRAVEYARD</b><span id="youGrave">0</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<aside class="side" id="sidePanel">
+  <h2>Card Inspector</h2>
+  <div class="inspector" id="inspector"><div class="big">No card selected</div><div class="sub">カードを選択してください</div><p>手札や戦場のカードをクリックすると、ここに詳細が表示されます。</p></div>
+  <h2>Stack</h2>
+  <div class="stack-box" id="stackBox"><div class="stack-empty">スタックは空です</div></div>
+  <div class="priority-line" id="priorityLine">優先権：-</div>
+  <h2>Action Log</h2>
+  <div class="log" id="log"></div>
+  <div class="actions">
+    <button class="stack-pass" id="passBtn" disabled>PASS / 解決</button>
+    <button class="primary" id="drawBtn">DRAW</button>
+    <button class="primary" id="battleBtn">BATTLE PHASE</button>
+    <button id="noBlockBtn" disabled>NO BLOCK</button>
+    <button class="primary" id="endBtn">END TURN</button>
+    <button id="newBtn">NEW GAME</button>
+  </div>
+</aside>
+</main>
+
+
+<div class="mobile-actions" aria-label="スマホ操作">
+  <button class="pass" onclick="document.getElementById('passBtn').click()">PASS</button>
+  <button class="primary" onclick="document.getElementById('drawBtn').click()">DRAW</button>
+  <button class="primary" onclick="document.getElementById('battleBtn').click()">BATTLE</button>
+  <button onclick="document.getElementById('noBlockBtn').click()">NO<br>BLOCK</button>
+  <button class="primary" onclick="document.getElementById('endBtn').click()">END</button>
+  <button onclick="document.getElementById('sidePanel').scrollIntoView({behavior:'smooth',block:'start'})">STACK<br>LOG</button>
+</div>
+
+<div class="handbar">
+  <div class="hand-info"><b>YOUR HAND</b><span id="handCount">7 cards</span><br><span>流脈タップでマナ切替</span><button class="mobile-hand-toggle" id="mobileHandToggle">手札を縮小</button></div>
+  <div class="hand" id="hand"></div>
+</div>
+</div>
+
+
+<div class="deck-setup" id="deckSetup">
+  <div class="deck-setup-box">
+    <div class="deck-setup-title">SUMMONER — DECK SELECT</div>
+    <div class="deck-setup-sub" id="deckSetupUser"></div>
+    <div class="deck-choice-grid">
+      <div class="deck-choice">
+        <h3>PLAYER 1 使用デッキ</h3>
+        <select id="p1DeckSelect" onchange="updateDeckSelectInfo()"></select>
+        <div class="deck-info" id="p1DeckInfo"></div>
+      </div>
+      <div class="deck-choice">
+        <h3>PLAYER 2 使用デッキ</h3>
+        <select id="p2DeckSelect" onchange="updateDeckSelectInfo()"></select>
+        <div class="deck-info" id="p2DeckInfo"></div>
+      </div>
+    </div>
+    <button class="start-battle-btn" onclick="startBattleWithSelectedDecks()">このデッキで対戦開始</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="modal" id="modal"><div class="modalbox"><h3 id="modalTitle">対象を選択</h3><div class="targets" id="targets"></div><br><button onclick="closeModal()">キャンセル</button></div></div>
+
+<script src="cards.js"></script>
+
+<script>
+let G;
+const names = Object.keys(DB);
+const currentUser = localStorage.getItem("arcana_duel_current_user") || "ゲスト";
+const el = id => document.getElementById(id);
+
+const COLOR_JP = {red:"赤", blue:"青", yellow:"黄", green:"緑", black:"黒", colorless:"無"};
+function colorJP(c){ return COLOR_JP[c] || "無"; }
+function manaSymbol(c){ return {red:"🔴",blue:"🔵",yellow:"🟡",green:"🟢",black:"🟣",colorless:"⚪"}[c] || "⚪"; }
+function typeJP(t){ return t === "monster" ? "モンスター" : t === "spell" ? "スペル" : "流脈"; }
+function sideLabel(w){ return w === "you" ? "PLAYER 1" : "PLAYER 2"; }
+function activeSide(){ return G.turn; }
+function opponentSide(w){ return w === "you" ? "cpu" : "you"; }
+function toast(s){ const d=el("toast"); d.textContent=s; d.style.display="block"; setTimeout(()=>d.style.display="none",1200); }
+function log(s){ const d=document.createElement("div"); d.textContent=s; el("log").prepend(d); }
+function shuffle(x){ for(let i=x.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [x[i],x[j]]=[x[j],x[i]]; } return x; }
+
+function card(name){
+  const d=DB[name];
+  if(!d) return null;
+  return {
+    name,t:d.t,color:d.color||"none",race:d.race||"",timing:d.timing||"normal",c:d.c||0,
+    a:d.a||0,h:d.h||0,max:d.h||0,baseA:d.a||0,baseH:d.h||0,txt:d.txt||"",effectKey:d.effectKey||"vanilla",haste:!!d.haste, flying:!!d.flying || /飛行/.test(d.txt||""),
+    id:crypto.randomUUID?.()||Math.random().toString(36),summon:!d.haste,tapped:false,isFaceDown:false,tapLocked:false,usedThisTurn:false,
+    tempA:0,tempH:0,indestructible:false,returnOnDeath:d.effectKey==="returnOnDeath",soulNever:false,deathtouch:d.effectKey==="deathtouch"
+  };
+}
+
+function defaultDeckNames(){
+  // 60枚のプレイテスト用初期デッキ：各色10種の非土地カード＋各色流脈2枚
+  const out=[];
+  const offsets=[0,24,48,72,96];
+  for(const off of offsets){ for(let i=0;i<10;i++){ if(names[off+i] && DB[names[off+i]].t !== "land") out.push(names[off+i]); } }
+  ["赤の流脈","青の流脈","緑の流脈","黄の流脈","黒の流脈"].forEach(n=>{ out.push(n,n); });
+  return out.slice(0,60);
+}
+function savedDecksForCurrentUser(){
+  try{
+    return JSON.parse(localStorage.getItem(`arcana_duel_decks_${currentUser}`) || "{}");
+  }catch(e){
+    return {};
+  }
+}
+function deckListFromCounts(counts){
+  const list=[];
+  Object.keys(counts||{}).forEach(name=>{
+    if(!DB[name])return;
+    const n=Math.max(0,Number(counts[name])||0);
+    for(let i=0;i<n;i++)list.push(name);
+  });
+  return list;
+}
+function activeDeckNames(){
+  try{
+    const list=JSON.parse(localStorage.getItem(`arcana_duel_active_deck_${currentUser}`) || "[]");
+    return Array.isArray(list) ? list.filter(n=>DB[n]) : [];
+  }catch(e){ return []; }
+}
+function buildDeckFromNames(list,owner){
+  const valid=(list||[]).filter(n=>DB[n]);
+  const base=valid.length ? valid : defaultDeckNames();
+  return shuffle(base.map(name=>{
+    const c=card(name);
+    if(c)c.originalOwner=owner;
+    return c;
+  }).filter(Boolean));
+}
+function fillDeckSelectors(){
+  const decks=savedDecksForCurrentUser();
+  const namesSaved=Object.keys(decks);
+  const activeName=localStorage.getItem(`arcana_duel_active_deck_${currentUser}_name`) || "";
+  const activeList=activeDeckNames();
+
+  const options=[];
+  if(activeList.length) options.push({value:"__active__",label:`現在の使用デッキ：${activeName || "アクティブデッキ"}`,count:activeList.length});
+  namesSaved.forEach(name=>options.push({value:name,label:name,count:deckListFromCounts(decks[name]).length}));
+  if(!options.length) options.push({value:"__default__",label:"プレイテスト用デフォルトデッキ",count:defaultDeckNames().length});
+
+  for(const id of ["p1DeckSelect","p2DeckSelect"]){
+    const sel=el(id); sel.innerHTML="";
+    options.forEach(o=>{
+      const opt=document.createElement("option");
+      opt.value=o.value; opt.textContent=`${o.label}（${o.count}枚）`;
+      sel.appendChild(opt);
+    });
+  }
+  if(options.length>1) el("p2DeckSelect").selectedIndex=1;
+  el("deckSetupUser").textContent=`ユーザー「${currentUser}」に保存されているデッキから、両プレイヤーの使用デッキを選択してください。`;
+  updateDeckSelectInfo();
+}
+function selectedDeckNames(selectId){
+  const value=el(selectId).value;
+  if(value==="__active__") return activeDeckNames();
+  if(value==="__default__") return defaultDeckNames();
+  const decks=savedDecksForCurrentUser();
+  return deckListFromCounts(decks[value]);
+}
+function updateDeckSelectInfo(){
+  for(const [sid,iid] of [["p1DeckSelect","p1DeckInfo"],["p2DeckSelect","p2DeckInfo"]]){
+    const sel=el(sid), info=el(iid);
+    if(!sel||!info)return;
+    const list=selectedDeckNames(sid);
+    info.textContent=`${list.length}枚 / ${sel.options[sel.selectedIndex]?.textContent || ""}`;
+  }
+}
+function startBattleWithSelectedDecks(){
+  const p1=selectedDeckNames("p1DeckSelect");
+  const p2=selectedDeckNames("p2DeckSelect");
+  if(!p1.length || !p2.length){ toast("PLAYER 1 / PLAYER 2 のデッキを選択してください"); return; }
+  el("deckSetup").classList.add("hidden");
+  init(p1,p2);
+}
+function openDeckSetup(){
+  fillDeckSelectors();
+  el("deckSetup").classList.remove("hidden");
+}
+function init(p1Names=null,p2Names=null){
+  const p1=p1Names || selectedDeckNames("p1DeckSelect");
+  const p2=p2Names || selectedDeckNames("p2DeckSelect");
+  G={
+    you:{hp:20,deck:buildDeckFromNames(p1,"you"),hand:[],field:[],lands:[],grave:[],land:false,manaPool:[],drawPending:0,afterDraw:null,
+      counterPlay:0,counterAttack:0,damagePrevent:0,returnAllOnDeath:false,soulNever:false,teamUnblockable:false,teamDeathtouch:false},
+    cpu:{hp:20,deck:buildDeckFromNames(p2,"cpu"),hand:[],field:[],lands:[],grave:[],land:false,manaPool:[],drawPending:0,afterDraw:null,
+      counterPlay:0,counterAttack:0,damagePrevent:0,returnAllOnDeath:false,soulNever:false,teamUnblockable:false,teamDeathtouch:false},
+    turn:"you",turnNo:1,phase:"MAIN PHASE",selected:null,uiSelected:null,action:null,over:false,blockPending:null,stack:[],priority:"you",passCount:0,resolvingStack:false
+  };
+  el("log").innerHTML="";
+  for(let i=0;i<7;i++){draw("you");draw("cpu");}
+  begin("you",true);
+  log(`ゲーム開始。PLAYER 1「${el("p1DeckSelect").options[el("p1DeckSelect").selectedIndex]?.textContent || ""}」 / PLAYER 2「${el("p2DeckSelect").options[el("p2DeckSelect").selectedIndex]?.textContent || ""}」`);
+  render();
+}
+function begin(w,first=false){
+  const p=G[w]; p.land=false; p.mainActionStarted=false; p.manaPool=[]; p.drawPending=first?0:1;
+  p.field.forEach(c=>{c.summon=false;c.tapped=false;c.tapLocked=false;});
+  p.lands.forEach(c=>{c.tapped=false;c.usedThisTurn=false;c.tapLocked=false;});
+  G.phase="MAIN PHASE"; G.selected=null; G.uiSelected=null; G.blockPending=null; G.action=null;
+  G.priority=w;G.passCount=0;
+  log(sideLabel(w)+"のターン開始。"+(first?"先攻のため開始ドローはありません。":"DRAWボタンで1枚引いてください。"));
+}
+function draw(w){ const p=G[w]; if(!p.deck.length){p.hp=0;check();return null;} const c=p.deck.pop(); p.hand.push(c); return c; }
+function requestDraw(w,count=1,afterDraw=null){
+  const p=G[w]; p.drawPending=(p.drawPending||0)+count; if(afterDraw) p.afterDraw=afterDraw;
+}
+function playerDraw(){
+  if(G.over)return;
+  const w=activeSide(),p=G[w];
+  if(p.drawPending<=0)return toast("現在ドローできません");
+  if(!p.deck.length){p.hp=0;check();render();return;}
+  draw(w); p.drawPending--;
+  log(sideLabel(w)+"がDRAWボタンで1枚引きました。");
+  if(p.drawPending===0 && typeof p.afterDraw==="function"){
+    const fn=p.afterDraw; p.afterDraw=null; setTimeout(()=>fn(),0);
+  }
+  render();
+}
+
+function attackPower(c,owner){
+  if(!c || c.t!=="monster") return 0;
+  const aura=G[owner]?.field?.filter(x=>x.t==="monster"&&x.effectKey==="auraAtk1").length||0;
+  return c.a + aura;
+}
+function manaColorOf(m){return typeof m==="string"?m:(m?.color||"colorless");}
+function markManaSpent(player,m){
+  if(!m||typeof m==="string"||!m.sourceId)return;
+  const land=player.lands.find(x=>x.id===m.sourceId);
+  if(land){land.usedThisTurn=true;land.tapLocked=true;}
+}
+function canPayCost(player,c){
+  if(c.t==="land")return true;
+  const pool=player.manaPool||[]; if(pool.length<c.c)return false;
+  if(c.color&&c.color!=="none"&&!pool.some(m=>manaColorOf(m)===c.color))return false;
+  return true;
+}
+function payCost(player,c){
+  if(c.t==="land")return;
+  let pool=[...player.manaPool],req=c.c;
+  const consume=i=>{if(i<0)return false;const [m]=pool.splice(i,1);markManaSpent(player,m);return true;};
+  if(c.color&&c.color!=="none"){
+    const i=pool.findIndex(m=>manaColorOf(m)===c.color);
+    if(i>=0){consume(i);req--;}
+  }
+  while(req>0){
+    let i=pool.findIndex(m=>manaColorOf(m)==="colorless");
+    if(i<0)i=pool.length-1;
+    if(i<0)break;
+    consume(i);req--;
+  }
+  player.manaPool=pool;
+}
+function renderManaPool(owner){
+  const c=el(owner+"ManaPool"); if(!c)return; c.innerHTML="";
+  (G[owner].manaPool||[]).forEach(m=>{const col=manaColorOf(m);const x=document.createElement("span");x.className="mana-icon "+col;x.textContent=manaSymbol(col);c.appendChild(x);});
+}
+
+function makeCard(c,where,index){
+  const owner=(where==="hand"||where==="youField"||where==="youLand")?"you":"cpu";
+  const isField=(where==="youField"||where==="cpuField");
+  let affordable=false;
+  if((where==="hand"||where==="cpuHand")&&c.t!=="land"){
+    const instant=c.timing==="instant"; const valid=instant|| (G.turn===owner&&G.phase==="MAIN PHASE");
+    affordable=valid&&canPayCost(G[owner],c);
+  }
+  if(isField&&c.t==="spell") affordable=(c.timing==="instant"||G.turn===owner);
+  const d=document.createElement("div"); d.dataset.id=c.id;
+  const colorClass=c.color&&c.color!=="none"?" color-"+c.color:"";
+  d.className="card "+c.t+colorClass+(G.selected===c.id?" selected":"")+(c.tapped?" tapped":"")+(affordable?" affordable-red":"");
+  const stats=c.t==="monster"?`<div class="stats">${attackPower(c,owner)}/${Math.max(0,c.h)}</div>`:"";
+  d.innerHTML=`<div class="name">${c.name}</div><div class="type">${typeJP(c.t)}${c.race?" / "+c.race:""}</div>${c.t!=="land"?`<div class="cost">${c.c}</div>`:""}<div class="art">${c.timing==="instant"?"⚡":c.t==="monster"?"◆":c.t==="spell"?"✦":"▣"}</div><div class="rules">${c.txt}</div>${stats}`;
+
+  if(c.isFaceDown){
+    d.className="card back"+(G.selected===c.id?" selected":"")+(c.tapped?" tapped":"");
+    d.innerHTML=`<div class="name" style="font-size:9px;color:#cbd5e1">裏向き流脈</div><div class="art">▣</div><div class="rules" style="font-size:8px;text-align:center">1マナ</div>`;
+  }
+
+  const isLandZone=(where==="youLand"||where==="cpuLand");
+  if(G.uiSelected===c.id && ((isField&&c.t==="monster")||isLandZone)){
+    const controls=document.createElement("div");
+    controls.className="card-controls";
+
+    const tapBtn=document.createElement("button");
+    tapBtn.className="tap-btn";
+    if(isLandZone){
+      const locked=c.tapped&&c.usedThisTurn;
+      tapBtn.title=locked?"使用済み：カード効果または次のターン開始までアンタップ不可":(c.tapped?"未使用マナを取り消してアンタップ":"タップしてマナ生成");
+      tapBtn.textContent=locked?"🔒":(c.tapped?"↶":"↷");
+      if(locked){tapBtn.disabled=true;tapBtn.classList.add("locked-btn");}
+      tapBtn.onclick=(e)=>{e.stopPropagation();toggleLandMana(c,owner);};
+    }else{
+      const locked=c.tapped&&c.tapLocked;
+      tapBtn.title=locked?"使用済み：カード効果または次のターン開始までアンタップ不可":(c.tapped?"アンタップ":"タップ");
+      tapBtn.textContent=locked?"🔒":(c.tapped?"↶":"↷");
+      if(locked){tapBtn.disabled=true;tapBtn.classList.add("locked-btn");}
+      tapBtn.onclick=(e)=>{e.stopPropagation();toggleTap(c,owner);};
+    }
+    controls.appendChild(tapBtn);
+
+    if(isField&&c.t==="monster"&&c.effectKey==="tapBurn2"){
+      const abilityBtn=document.createElement("button");
+      abilityBtn.className="ability-btn";
+      abilityBtn.title="タップ能力を発動";
+      abilityBtn.textContent="⚡";
+      abilityBtn.onclick=(e)=>{e.stopPropagation();activateMonsterAbility(c,owner);};
+      controls.appendChild(abilityBtn);
+    }
+    d.appendChild(controls);
+  }
+
+  d.onclick=()=>clickCard(where,index,c);
+  return d;
+}
+function render(){
+  if(!G)return;
+  el("youHp").textContent=Math.max(0,G.you.hp)+" LP"; el("cpuHp").textContent=Math.max(0,G.cpu.hp)+" LP";
+  el("youDeck").textContent=G.you.deck.length;el("cpuDeck").textContent=G.cpu.deck.length;el("cpuHand").textContent=G.cpu.hand.length;el("cpuHandCount").textContent=G.cpu.hand.length+" cards";
+  el("youGrave").textContent=G.you.grave.length;el("cpuGrave").textContent=G.cpu.grave.length;
+  el("handCount").textContent=G.you.hand.length+" cards";
+  renderManaPool("you");renderManaPool("cpu");renderStack();
+  el("drawBtn").textContent="DRAW "+sideLabel(G.turn);el("drawBtn").disabled=G.over||G[G.turn].drawPending<=0;
+  el("topTurn").textContent="TURN "+G.turnNo;el("turnPill").textContent=G.over?(G.you.hp>0?"PLAYER 1 WINS":"PLAYER 2 WINS"):sideLabel(G.turn)+" TURN";el("phase").textContent=G.phase;
+  fill("hand",G.you.hand,"hand");fill("cpuHandCards",G.cpu.hand,"cpuHand");fill("youField",G.you.field,"youField");fill("cpuField",G.cpu.field,"cpuField");fill("youLands",G.you.lands,"youLand");fill("cpuLands",G.cpu.lands,"cpuLand");
+  if(G.selected){const s=findById(G.selected);if(s)showInspector(s);}
+  el("endBtn").disabled=G.over||G.stack.length>0;el("battleBtn").disabled=G.over||G.phase!=="MAIN PHASE"||G.stack.length>0;el("noBlockBtn").disabled=G.over||!G.blockPending;
+}
+function fill(id,list,where){const x=el(id);x.innerHTML="";list.forEach((c,i)=>x.appendChild(makeCard(c,where,i)));}
+function findById(id){for(const w of ["you","cpu"])for(const z of ["hand","field","lands","grave"])for(const c of G[w][z])if(c.id===id)return c;return null;}
+function showInspector(c){
+  if(!c){el("inspector").innerHTML="<div class='big'>No card selected</div><div class='sub'>カードを選択してください</div><p>カードをクリックすると詳細が表示されます。</p>";return;}
+  if(c.isFaceDown){el("inspector").innerHTML=`<div class="big">裏向き流脈</div><div class="sub">流脈（無色）</div><p>元カード：${c.name}<br>タップで無色1マナ。</p>`;return;}
+  const owner=G.you.field.includes(c)||G.you.hand.includes(c)||G.you.lands.includes(c)?"you":"cpu";
+  const timing=c.timing==="instant"?"【高速詠唱】":"";
+  el("inspector").innerHTML=`<div class="big">${c.name}</div><div class="sub">${typeJP(c.t)} ${c.race?" / "+c.race:""} ${c.t!=="land"?"コスト "+c.c:""} ${c.color!=="none"?"【"+colorJP(c.color)+"】":""} ${timing}</div><p>${c.txt}</p>${c.t==="monster"?`<p style="margin-top:12px;font-weight:800">ATK ${attackPower(c,owner)} HP ${Math.max(0,c.h)}/${c.max}</p>`:""}`;
+}
+
+function toggleLandMana(c,owner){
+  if(G.over)return;
+  if(!G[owner].lands.includes(c))return;
+
+  if(c.tapped){
+    if(c.usedThisTurn)return toast("この流脈はすでにマナ支払いに使用済みです。カード効果か次のターン開始までアンタップできません");
+    const i=(G[owner].manaPool||[]).findIndex(m=>typeof m!=="string"&&m.sourceId===c.id);
+    if(i<0){c.usedThisTurn=true;c.tapLocked=true;return toast("この流脈のマナはすでに使用されています");}
+    G[owner].manaPool.splice(i,1);
+    c.tapped=false;
+    c.tapLocked=false;
+    log(sideLabel(owner)+"が《"+(c.isFaceDown?"裏向きの流脈":c.name)+"》のタップを取り消しました。");
+    render();return;
+  }
+
+  c.tapped=true;c.usedThisTurn=false;c.tapLocked=false;
+  const manaColor=c.isFaceDown?"colorless":(c.color||"colorless");
+  G[owner].manaPool.push({color:manaColor,sourceId:c.id});
+  log(sideLabel(owner)+"が《"+(c.isFaceDown?"裏向きの流脈":c.name)+"》をタップし、"+colorJP(manaColor)+"マナを1つ生成。");
+  render();
+}
+
+function toggleTap(c,w){
+  if(G.over)return;
+  if(G.turn!==w)return toast("現在のターンプレイヤーのカードだけ手動操作できます");
+  if(G.phase!=="MAIN PHASE")return toast("手動のタップ／アンタップはメインフェイズで行ってください");
+  if(!G[w].field.includes(c)||c.t!=="monster")return;
+  if(c.tapped&&c.tapLocked)return toast("このモンスターは使用済みです。カード効果か次のターン開始までアンタップできません");
+  c.tapped=!c.tapped;
+  if(!c.tapped)c.tapLocked=false;
+  log(sideLabel(w)+"が《"+c.name+"》を"+(c.tapped?"手動でタップ":"手動でアンタップ")+"しました。");
+  render();
+}
+function tapAsUsed(c){if(!c)return;c.tapped=true;c.tapLocked=true;}
+function untapByEffect(c){if(!c)return;c.tapped=false;c.tapLocked=false;}
+function openPlayModal(i,c,w){
+  const box=el("targets");box.innerHTML="";el("modalTitle").textContent="《"+c.name+"》のプレイ方法を選択";
+  const canNormal=canAddToStack(c,w)&&canPayCost(G[w],c);
+  const b1=document.createElement("button");b1.textContent=`通常プレイ (コスト ${c.c})`;b1.disabled=!canNormal;if(!b1.disabled)b1.onclick=()=>{closeModal();playCard(i,w);};box.appendChild(b1);
+  const b2=document.createElement("button");b2.textContent="裏向きで流脈として置く";b2.disabled=G.stack.length>0||G.turn!==w||G.phase!=="MAIN PHASE"||G[w].land||G[w].mainActionStarted;b2.onclick=()=>{closeModal();playLand(i,true,w);};box.appendChild(b2);
+  el("modal").style.display="flex";
+}
+function checkCounterPlay(w,c){ // legacy compatibility; stack system handles 詠唱破棄
+
+  const defender=opponentSide(w),p=G[defender];
+  if(p.counterPlay<=0)return false;
+  p.counterPlay--; 
+  G[w].hand.splice(G[w].hand.indexOf(c),1); G[w].grave.push(c);
+  log(sideLabel(defender)+"の《詠唱破棄》の効果で《"+c.name+"》は無効化され墓地へ送られました。");
+  return true;
+}
+
+function restoreCardBaseState(c){
+  if(!c)return c;
+  const d=DB[c.name]||{};
+  if(c.t==="monster"){
+    c.baseA=Number(d.a)||c.baseA||0;
+    c.baseH=Number(d.h)||c.baseH||c.max||0;
+    c.a=c.baseA;
+    c.h=c.baseH;
+    c.max=c.baseH;
+    c.tempA=0;
+    c.tempH=0;
+    c.indestructible=false;
+    c.returnOnDeath=c.effectKey==="returnOnDeath";
+    c.soulNever=false;
+    c.deathtouch=c.effectKey==="deathtouch";
+    c.tapLocked=false;
+    c.usedThisTurn=false;
+  }
+  return c;
+}
+function prepareCardForHandOrGrave(c){
+  restoreCardBaseState(c);
+  c.tapped=false;
+  c.tapLocked=false;
+  c.usedThisTurn=false;
+  c.isFaceDown=false;
+  c.summon=true;
+  return c;
+}
+function prepareCardForLandZone(c,isFaceDown=false){
+  restoreCardBaseState(c);
+  c.tapped=false;
+  c.tapLocked=false;
+  c.usedThisTurn=false;
+  c.isFaceDown=!!isFaceDown;
+  c.summon=false;
+  return c;
+}
+
+function playLand(i,isFaceDown,w=activeSide()){
+  if(G.turn!==w)return toast(sideLabel(w)+"のターンではありません");if(G.phase!=="MAIN PHASE")return toast("流脈はメインフェイズでのみ置けます");if(G[w].mainActionStarted)return toast("このターンはすでにカードをプレイしています");if(G[w].land)return toast("このターンはすでに流脈を置いています");
+  const c=G[w].hand[i];if(!c)return;
+  G[w].hand.splice(i,1);c.isFaceDown=isFaceDown;G[w].lands.push(c);G[w].land=true;G[w].mainActionStarted=true;log(sideLabel(w)+"が《"+c.name+"》を"+(isFaceDown?"裏向きで":"")+"流脈としてプレイ。");render();
+}
+
+function renderStack(){
+  if(!G)return;
+  const box=el("stackBox"),line=el("priorityLine"),btn=el("passBtn");
+  if(!box||!line||!btn)return;
+  box.innerHTML="";
+  if(!G.stack.length){
+    box.innerHTML='<div class="stack-empty">スタックは空です</div>';
+    line.textContent="優先権：通常進行";
+    btn.disabled=true;
+    btn.textContent="PASS / 解決";
+    return;
+  }
+  [...G.stack].reverse().forEach((e,i)=>{
+    const d=document.createElement("div");
+    d.className="stack-entry"+(i===0?" top":"");
+    d.innerHTML=`<span>${i===0?"TOP ▶ ":""}《${e.card.name}》</span><span class="stack-owner">${sideLabel(e.owner)}</span>`;
+    box.appendChild(d);
+  });
+  line.textContent="優先権："+sideLabel(G.priority)+" / 連続PASS "+G.passCount+"/2";
+  btn.disabled=G.over||G.resolvingStack;
+  btn.textContent=sideLabel(G.priority)+" PASS";
+}
+function canAddToStack(c,w){
+  const instant=c.timing==="instant";
+  if(G.stack.length){
+    if(!instant)return false;
+    return G.priority===w;
+  }
+  if(instant)return true;
+  return G.turn===w&&G.phase==="MAIN PHASE";
+}
+function pushCardToStack(c,w){
+  G.stack.push({id:crypto.randomUUID?.()||Math.random().toString(36),card:c,owner:w,kind:"card"});
+  G.priority=opponentSide(w);
+  G.passCount=0;
+  log(sideLabel(w)+"が《"+c.name+"》をスタックに置きました。"+sideLabel(G.priority)+"が優先権を得ます。");
+  render();
+}
+function passPriority(){
+  if(G.over||!G.stack.length||G.resolvingStack)return;
+  log(sideLabel(G.priority)+"が優先権をパスしました。");
+  G.passCount++;
+  if(G.passCount>=2){
+    G.passCount=0;
+    resolveStackTop();
+  }else{
+    G.priority=opponentSide(G.priority);
+    render();
+  }
+}
+function counterStackEntry(entry,counterOwner){
+  const idx=G.stack.indexOf(entry);
+  if(idx<0)return false;
+  G.stack.splice(idx,1);
+  prepareCardForHandOrGrave(entry.card);
+  G[entry.owner].grave.push(entry.card);
+  log(sideLabel(counterOwner)+"の《詠唱破棄》により、"+sideLabel(entry.owner)+"の《"+entry.card.name+"》は無効化され墓地へ送られました。");
+  return true;
+}
+function resolveStackTop(){
+  if(!G.stack.length)return;
+  G.resolvingStack=true;
+  const entry=G.stack.pop(),c=entry.card,w=entry.owner;
+  log("スタック解決：《"+c.name+"》");
+  if(c.effectKey==="counterPlay"){
+    const target=[...G.stack].reverse().find(e=>e.owner!==w);
+    if(target)counterStackEntry(target,w);
+    else log("《詠唱破棄》：無効化できる相手カードがスタックにありません。");
+    prepareCardForHandOrGrave(c);G[w].grave.push(c);
+    G.resolvingStack=false;G.priority=G.turn;render();return;
+  }
+  if(c.t==="monster"){
+    G[w].field.push(c);c.summon=!c.haste;
+    log(sideLabel(w)+"の《"+c.name+"》が解決され、戦場に登場しました。");
+    G.resolvingStack=false;G.priority=G.turn;
+    onSummon(c,w);render();return;
+  }
+  if(c.t==="spell"){
+    G[w].field.push(c);
+    G.resolvingStack=false;G.priority=G.turn;
+    activateSpell(c,w);render();return;
+  }
+  G.resolvingStack=false;G.priority=G.turn;render();
+}
+
+function playCard(i,w=activeSide(),free=false){
+  const p=G[w],c=p.hand[i];if(!c)return;
+  if(!free&&!canAddToStack(c,w)){
+    if(G.stack.length&&c.timing!=="instant")return toast("スタックに対応できるのは【高速詠唱】を持つカードだけです");
+    if(G.stack.length&&G.priority!==w)return toast(sideLabel(w)+"は現在優先権を持っていません");
+    return toast(sideLabel(w)+"のターンのメインフェイズでのみプレイできます");
+  }
+  if(c.effectKey==="counterPlay"&&!G.stack.some(e=>e.owner!==w))return toast("《詠唱破棄》で無効化する相手カードがスタックにありません");
+  if(!free&&!canPayCost(p,c))return toast("《"+c.name+"》のプレイに必要なマナが足りません");
+  if(!free)payCost(p,c);
+  if(G.turn===w&&!free&&c.timing!=="instant")p.mainActionStarted=true;
+  p.hand.splice(i,1);
+  if(free){
+    p.field.push(c);c.summon=!c.haste;log(sideLabel(w)+"が《"+c.name+"》をコストなしで召喚。");onSummon(c,w);
+  }else{
+    pushCardToStack(c,w);
+  }
+}
+
+function onSummon(c,w){
+  const k=c.effectKey,opp=opponentSide(w);
+  // 《バニッシュスパイダー》の登場時効果は、旧DBとの互換性も含めてカード名でも保証する。
+  if(c.name==="バニッシュスパイダー" || k==="oppToFaceDownLand"){
+    const targets=G[opp].field.filter(x=>x.t==="monster");
+    if(!targets.length){
+      log("《"+c.name+"》の登場時効果：対象にできる相手モンスターがいません。");
+      render();
+      return;
+    }
+    chooseFromList(
+      targets,
+      "《"+c.name+"》：もともとの持ち主の流脈ゾーンに置く相手モンスターを選択",
+      x=>{
+        const destination=x.originalOwner||opp;
+        moveBetweenToFaceDownLand(x,opp,destination);
+        log("《"+c.name+"》の登場時効果で《"+x.name+"》を"+sideLabel(destination)+"の流脈ゾーンに裏向きで置きました。");
+        render();
+      }
+    );
+    return;
+  }
+  switch(k){
+    case "draw1": requestDraw(w,1); log(c.name+"の効果：1枚ドロー。DRAWボタンを押してください。");break;
+    case "draw2": requestDraw(w,2); log(c.name+"の効果：2枚ドロー。DRAWボタンを押してください。");break;
+    case "draw3": requestDraw(w,3); log(c.name+"の効果：3枚ドロー。DRAWボタンを押してください。");break;
+    case "draw5Bottom4": requestDraw(w,5,()=>openChooseFromHand(w,4,"オムニ・マインド：山札の下に置く4枚を選択",cards=>{cards.forEach(c2=>{const idx=G[w].hand.indexOf(c2);if(idx>=0)G[w].hand.splice(idx,1);});G[w].deck.unshift(...cards);log("オムニ・マインド：選んだ4枚を山札の下に置きました。");render();}));break;
+    case "destroyOppLand": chooseFromList(G[opp].lands,sideLabel(opp)+"の流脈を1枚選択",x=>destroyLand(x,opp));break;
+    case "damageAll3": G[opp].field.filter(x=>x.t==="monster").slice().forEach(x=>dealDamage(x,3,c.name,opp));break;
+    case "bounceAllOpp": bounceAll(opp);break;
+    case "tapOppOnSummon": chooseFromList(G[opp].field.filter(x=>x.t==="monster"),"タップする相手モンスターを選択",x=>{tapAsUsed(x);log("《"+x.name+"》をタップしました。");render();});break;
+    case "tapAllOpp": G[opp].field.filter(x=>x.t==="monster").forEach(x=>tapAsUsed(x));log(c.name+"：相手モンスターをすべてタップしました。");break;
+    case "searchLand": searchDeckToLands(w,1,null,"流脈ゾーンに置く流脈カードを1枚選択");break;
+    case "searchSpell": searchDeck(w,"spell","スペルカードを1枚選択");break;
+    case "searchMonster": searchDeck(w,"monster","モンスターカードを1枚選択");break;
+    case "handToFaceDownLand": chooseFromList(G[w].hand,"流脈として裏向きに置く手札を1枚選択",x=>{const i=G[w].hand.indexOf(x);if(i>=0){G[w].hand.splice(i,1);prepareCardForLandZone(x,true);G[w].lands.push(x);log("《仙道エルフ》：手札の《"+x.name+"》を裏向き流脈にしました。");render();}});break;
+    case "graveToFaceDownLand": chooseFromList(G[w].grave.filter(x=>x.t==="monster"),"裏向き流脈にする墓地のモンスターを1体選択",x=>{const i=G[w].grave.indexOf(x);if(i>=0){G[w].grave.splice(i,1);prepareCardForLandZone(x,true);G[w].lands.push(x);log("《大樹のシャーマン》：墓地の《"+x.name+"》を裏向き流脈にしました。");render();}});break;
+    case "sacOwnOnSummon": chooseFromList(G[w].field.filter(x=>x.t==="monster"),"墓地へ送る自分のモンスターを1体選択",x=>destroyMonster(x,w));break;
+    case "hpMinus1EOT": chooseFromList(G[opp].field.filter(x=>x.t==="monster"),"HPを-1する相手モンスターを選択",x=>changeTempHP(x,-1));break;
+    case "hpMinus2EOT": chooseFromList(G[opp].field.filter(x=>x.t==="monster"),"HPを-2する相手モンスターを選択",x=>changeTempHP(x,-2));break;
+    case "hpMinus3AllEOT": G[opp].field.filter(x=>x.t==="monster").slice().forEach(x=>changeTempHP(x,-3));break;
+    case "discardRandomOpp": discardRandom(opp);break;
+    case "oppToOwnFaceDownLand": chooseFromList(G[opp].field.filter(x=>x.t==="monster"),"もともとの持ち主の流脈ゾーンに置く相手モンスターを選択",x=>moveToFaceDownLand(x,opp));break;
+    case "destroyOppMonster": chooseFromList(G[opp].field.filter(x=>x.t==="monster"),"破壊する相手モンスターを選択",x=>destroyMonster(x,opp));break;
+    default: break;
+  }
+  render();
+}
+
+function activateMonsterAbility(c,w){
+  if(G.turn!==w||c.tapped)return;
+  if(c.effectKey!=="tapBurn2")return;
+  tapAsUsed(c);dealDamage("face",2,c.name,w==="you"?"cpu":"you");log("《"+c.name+"》の効果で相手プレイヤーに2ダメージ。");render();
+}
+
+function activateSpell(c,w=activeSide()){
+  if(G.turn!==w&&c.timing!=="instant")return toast("このスペルは今は発動できません");
+  G.action={card:c,owner:w};
+  const k=c.effectKey;
+  switch(k){
+    case "face2": simpleSpell(c,w,()=>dealDamage("face",2,c.name,opponentSide(w)));break;
+    case "face4": simpleSpell(c,w,()=>dealDamage("face",4,c.name,opponentSide(w)));break;
+    case "damageAll3": simpleSpell(c,w,()=>G[opponentSide(w)].field.filter(x=>x.t==="monster").slice().forEach(x=>dealDamage(x,3,c.name,opponentSide(w))));break;
+    case "damageOpp2": targetSpell(c,w,x=>dealDamage(x,2,c.name,opponentSide(w)),G[opponentSide(w)].field.filter(x=>x.t==="monster"));break;
+    case "chooseBurn3": chooseBurn3(c,w);break;
+    case "destroyOppLand": targetSpell(c,w,x=>destroyLand(x,opponentSide(w)),G[opponentSide(w)].lands);break;
+    case "attackUntappedEOT": simpleSpell(c,w,()=>{G[w].canAttackUntapped=true;});break;
+    case "bounceAny": targetSpell(c,w,x=>bounceMonster(x),[...G.you.field,...G.cpu.field].filter(x=>x.t==="monster"));break;
+    case "scry3": scry3(w,c);break;
+    case "counterAttack": simpleSpell(c,w,()=>{G[w].counterAttack+=1;});break;
+    case "bounceHp3": simpleSpell(c,w,()=>{const opp=opponentSide(w);G[opp].field.filter(x=>x.t==="monster"&&x.h<=3).slice().forEach(x=>bounceMonster(x));});break;
+    case "draw3": requestThenFinishDrawSpell(c,w,3);break;
+    case "counterPlay": simpleSpell(c,w,()=>{});break;
+    case "returnAllOnDeath": simpleSpell(c,w,()=>{G[w].returnAllOnDeath=true;G[w].field.filter(x=>x.t==="monster").forEach(x=>x.returnOnDeath=true);});break;
+    case "teamUnblockable": simpleSpell(c,w,()=>{G[w].teamUnblockable=true;});break;
+    case "bounceAll": simpleSpell(c,w,()=>{bounceAll("you");bounceAll("cpu");});break;
+    case "draw5Bottom4": requestThenFinishDrawSpell(c,w,5,()=>openChooseFromHand(w,4,"オムニ・マインド：山札の下に置く4枚を選択",cards=>{cards.forEach(c2=>{const idx=G[w].hand.indexOf(c2);if(idx>=0)G[w].hand.splice(idx,1);});G[w].deck.unshift(...cards);log("オムニ・マインド：4枚を山札の下へ置きました。");finishSpell(c,w);}));break;
+    case "atkPlus1": targetSpell(c,w,x=>changeTempATK(x,1),G[w].field.filter(x=>x.t==="monster"));break;
+    case "ownToFaceDownLand": targetSpell(c,w,x=>moveToFaceDownLand(x,w),G[w].field.filter(x=>x.t==="monster"));break;
+    case "teamAtk3": simpleSpell(c,w,()=>G[w].field.filter(x=>x.t==="monster").forEach(x=>changeTempATK(x,3)));break;
+    case "searchMonster": searchDeckN(w,"monster",1,c,null,"手札に加えるモンスターカードを1枚選択");break;
+    case "oppToFaceDownLand": targetSpell(c,w,x=>moveToFaceDownLand(x,opponentSide(w)),G[opponentSide(w)].field.filter(x=>x.t==="monster"));break;
+    case "search2Land": searchDeckToLands(w,2,c,"流脈ゾーンに置く流脈カードを選択");break;
+    case "soulNever": simpleSpell(c,w,()=>{G[w].soulNever=true;G[w].field.filter(x=>x.t==="monster").forEach(x=>x.soulNever=true);});break;
+    case "prevent3": simpleSpell(c,w,()=>{G[w].damagePrevent+=3;});break;
+    case "heal2": simpleSpell(c,w,()=>{G[w].hp+=2;});break;
+    case "indestructibleOnce": simpleSpell(c,w,()=>G[w].field.filter(x=>x.t==="monster").forEach(x=>x.indestructible=true));break;
+    case "tapUpTo2": multiSelect(c,w,G[opponentSide(w)].field.filter(x=>x.t==="monster"),2,"最大2体を選択してタップ",xs=>{xs.forEach(x=>tapAsUsed(x));});break;
+    case "freeSummon3": chooseFromList(G[w].hand.filter(x=>x.t==="monster"&&x.c<=3),"コスト3以下のモンスターを1体選択",x=>freeSummonFromCard(x,w,c));break;
+    case "heal4": simpleSpell(c,w,()=>{G[w].hp+=4;});break;
+    case "hpPlus3Team": simpleSpell(c,w,()=>G[w].field.filter(x=>x.t==="monster").forEach(x=>changeTempHP(x,3)));break;
+    case "destroyAll": simpleSpell(c,w,()=>{[...G.you.field,...G.cpu.field].filter(x=>x.t==="monster").forEach(x=>{const own=G.you.field.includes(x)?"you":"cpu";destroyMonster(x,own);});});break;
+    case "discardRandomOpp": simpleSpell(c,w,()=>discardRandom(opponentSide(w)));break;
+    case "recoverOne": targetGrave(c,w,1);break;
+    case "recoverUpTo2": targetGrave(c,w,2);break;
+    case "destroyOppMonster":
+      targetSpell(
+        c,w,
+        x=>{
+          const opp=opponentSide(w);
+          const destroyed=destroyMonster(x,opp);
+          if(destroyed)log("《"+c.name+"》の効果で《"+x.name+"》を破壊しました。");
+        },
+        G[opponentSide(w)].field.filter(x=>x.t==="monster")
+      );
+      break;
+    case "destroyUntappedOpp": targetSpell(c,w,x=>destroyMonster(x,opponentSide(w)),G[opponentSide(w)].field.filter(x=>x.t==="monster"&&!x.tapped));break;
+    case "destroyOneEach": destroyOneEach(c,w);break;
+    case "teamDeathtouch": simpleSpell(c,w,()=>{G[w].teamDeathtouch=true;G[w].field.filter(x=>x.t==="monster").forEach(x=>x.deathtouch=true);});break;
+    case "soulDrain": soulDrain(c,w);break;
+    case "sixColorless": simpleSpell(c,w,()=>{G[w].hp-=3;for(let i=0;i<6;i++)G[w].manaPool.push({color:"colorless",sourceId:null});});break;
+    case "hpMinus2AllEOT": simpleSpell(c,w,()=>G[opponentSide(w)].field.filter(x=>x.t==="monster").forEach(x=>changeTempHP(x,-2)));break;
+    default: simpleSpell(c,w,()=>{});break;
+  }
+}
+function finishSpell(c,w){ if(G[w].field.some(x=>x.id===c.id)){G[w].field=G[w].field.filter(x=>x.id!==c.id);prepareCardForHandOrGrave(c);G[w].grave.push(c);}G.action=null;G.priority=G.turn;G.passCount=0;render();check(); }
+function simpleSpell(c,w,fn){fn();finishSpell(c,w);}
+function requestThenFinishDrawSpell(c,w,count,after=null){
+  requestDraw(w,count,()=>{if(after)after();else finishSpell(c,w);});
+  log("《"+c.name+">："+count+"枚ドロー。DRAWボタンを押してください。");render();
+}
+function targetSpell(c,w,fn,list){
+  const box=el("targets");box.innerHTML="";el("modalTitle").textContent="《"+c.name+"》の対象を選択";
+  if(!list.length){
+    toast("対象がありません");
+    log("《"+c.name+"》：有効な対象がないため効果は何も起こりませんでした。");
+    G.action=null;
+    finishSpell(c,w);
+    return;
+  }
+  list.forEach(x=>{
+    const b=document.createElement("button");
+    b.textContent=x.name+" "+(x.t==="monster"?attackPower(x,G.you.field.includes(x)?"you":"cpu")+"/"+x.h:"");
+    b.onclick=()=>{closeModal();fn(x);finishSpell(c,w);};
+    box.appendChild(b);
+  });
+  el("modal").style.display="flex";
+}
+function chooseBurn3(c,w){
+  const opp=opponentSide(w),box=el("targets");box.innerHTML="";el("modalTitle").textContent="《火山雷》：効果を1つ選択";
+  addTarget("相手プレイヤーに3ダメージ",()=>{closeModal();dealDamage("face",3,c.name,opp);finishSpell(c,w);});
+  addTarget("相手モンスター1体に3ダメージ",()=>{closeModal();targetSpell(c,w2=>{},[]);});
+  G.action={card:c,owner:w};
+  // 上のtargetSpellを使う代わりに、2つ目は専用に再表示
+  const bs=box.querySelectorAll("button");bs[1].onclick=()=>{
+    box.innerHTML="";el("modalTitle").textContent="《火山雷》の対象を選択";
+    G[opp].field.filter(x=>x.t==="monster").forEach(x=>addTarget(x.name+" "+attackPower(x,opp)+"/"+x.h,()=>{closeModal();dealDamage(x,3,c.name,opp);finishSpell(c,w);}));
+  };
+  el("modal").style.display="flex";
+}
+function searchDeck(w,type,title){ searchDeckN(w,type,1,null,null,title); }
+function searchDeckN(w,type,n,c,done,title){
+  const matches=G[w].deck.filter(x=>x.t===type); if(!matches.length){toast("対象カードが山札にありません");if(c)finishSpell(c,w);return;}
+  const box=el("targets");box.innerHTML="";el("modalTitle").textContent=title||"山札からカードを選択";
+  matches.forEach(x=>addTarget(x.name+" / "+typeJP(x.t),()=>{
+    const idx=G[w].deck.indexOf(x);if(idx>=0)G[w].deck.splice(idx,1);G[w].hand.push(x);
+    if(n>1){ // 複数選択は再帰で残りを選ぶ
+      const newC=n-1; closeModal(); setTimeout(()=>searchDeckN(w,type,newC,c,done,title),0);
+    } else {G[w].deck=shuffle(G[w].deck);closeModal();if(done)done();if(c)finishSpell(c,w);}
+  }));
+  el("modal").style.display="flex";
+}
+
+function searchDeckToLands(w,n,c,title){
+  let remaining=Math.max(0,n||0);
+
+  function finishSearch(){
+    G[w].deck=shuffle(G[w].deck);
+    el("modal").style.display="none";
+    G.action=null;
+    if(c)finishSpell(c,w);else render();
+  }
+
+  function step(){
+    const matches=G[w].deck.filter(x=>x.t==="land");
+    if(remaining<=0 || !matches.length){
+      if(remaining>0&&!matches.length)toast("山札にこれ以上流脈カードがありません");
+      finishSearch();
+      return;
+    }
+
+    const box=el("targets");box.innerHTML="";
+    el("modalTitle").textContent=(title||"流脈カードを選択")+"（残り"+remaining+"枚）";
+    matches.forEach(x=>addTarget(x.name+" / "+colorJP(x.color),()=>{
+      const deckIndex=G[w].deck.indexOf(x);
+      if(deckIndex>=0)G[w].deck.splice(deckIndex,1);
+      prepareCardForLandZone(x,false);
+      G[w].lands.push(x);
+      remaining--;
+      log(sideLabel(w)+"は山札から《"+x.name+"》を流脈ゾーンに置きました。");
+      if(remaining<=0)finishSearch();else step();
+    }));
+    el("modal").style.display="flex";
+  }
+
+  step();
+}
+
+function scry3(w,c){
+  const top=G[w].deck.slice(-3);if(!top.length){finishSpell(c,w);return;}
+  let chosen=[];const box=el("targets");box.innerHTML="";el("modalTitle").textContent="予知：上から3枚を上→下の順に選択";
+  function step(){box.innerHTML="";top.filter(x=>!chosen.includes(x)).forEach(x=>addTarget(x.name,()=>{chosen.push(x);if(chosen.length===top.length){top.forEach(x=>{const idx=G[w].deck.indexOf(x);if(idx>=0)G[w].deck.splice(idx,1);});for(let i=chosen.length-1;i>=0;i--)G[w].deck.push(chosen[i]);closeModal();finishSpell(c,w);}else step();}));}
+  el("modal").style.display="flex";step();
+}
+function openChooseFromHand(w,count,title,done){
+  const selected=[];const box=el("targets");el("modalTitle").textContent=title;
+  function rerender(){box.innerHTML="";G[w].hand.forEach(x=>{const b=document.createElement("button");b.textContent=(selected.includes(x)?"✓ ":"")+x.name;if(selected.includes(x))b.disabled=true;b.onclick=()=>{selected.push(x);if(selected.length>=count){closeModal();done(selected);}else rerender();};box.appendChild(b);});}
+  el("modal").style.display="flex";rerender();
+}
+function chooseFromList(list,title,done){
+  const box=el("targets");box.innerHTML="";el("modalTitle").textContent=title;if(!list.length){closeModal();return toast("対象がありません");}
+  list.forEach(x=>addTarget(x.name+" "+(x.t==="monster"?attackPower(x,G.you.field.includes(x)?"you":"cpu")+"/"+x.h:""),()=>{closeModal();done(x);}));el("modal").style.display="flex";
+}
+function multiSelect(c,w,list,max,title,done){
+  if(!list.length){toast("対象がありません");finishSpell(c,w);return;}
+  const selected=[];const box=el("targets");el("modalTitle").textContent=title;
+  const confirm=document.createElement("button");confirm.textContent="選択を確定（0体でも可）";confirm.onclick=()=>{closeModal();done(selected);finishSpell(c,w);};box.appendChild(confirm);
+  function rerender(){for(const b of [...box.querySelectorAll("button")].slice(1))b.remove();list.forEach(x=>{const b=document.createElement("button");b.textContent=(selected.includes(x)?"✓ ":"")+x.name;b.onclick=()=>{if(selected.includes(x)){selected.splice(selected.indexOf(x),1);}else if(selected.length<max)selected.push(x);else return toast("最大"+max+"体です");rerender();};box.appendChild(b);});}
+  el("modal").style.display="flex";rerender();
+}
+
+function targetGrave(c,w,max){
+  const list=G[w].grave.filter(x=>x.t==="monster");
+  if(max===1)targetGraveOne(c,w,list);
+  else multiSelect(c,w,list,max,"墓地から最大"+max+"体を選択",xs=>xs.forEach(x=>{
+    const i=G[w].grave.indexOf(x);
+    if(i>=0)G[w].grave.splice(i,1);
+    prepareCardForHandOrGrave(x);
+    G[w].hand.push(x);
+  }));
+}
+
+function targetGraveOne(c,w,list){
+  chooseFromList(list,"墓地からモンスターを1体選択",x=>{
+    const i=G[w].grave.indexOf(x);
+    if(i>=0){
+      G[w].grave.splice(i,1);
+      prepareCardForHandOrGrave(x);
+      G[w].hand.push(x);
+    }
+    finishSpell(c,w);
+  });
+}
+function soulDrain(c,w){
+  const list=G[w].field.filter(x=>x.t==="monster");if(!list.length){finishSpell(c,w);return;}
+  multiSelect(c,w,list,list.length,"破壊する自分のモンスターを選択",xs=>{xs.forEach(x=>destroyMonster(x,w));G[w].hp+=xs.length*2;});
+}
+function destroyOneEach(c,w){
+  const opp=opponentSide(w); chooseFromList(G[w].field.filter(x=>x.t==="monster"),"自分の破壊するモンスターを選択",own=>chooseFromList(G[opp].field.filter(x=>x.t==="monster"),"相手の破壊するモンスターを選択",enemy=>{destroyMonster(own,w);destroyMonster(enemy,opp);finishSpell(c,w);}));
+}
+function freeSummonFromCard(x,w,sourceSpell){
+  const i=G[w].hand.indexOf(x);if(i<0)return;G[w].hand.splice(i,1);G[w].field.push(x);x.summon=!x.haste;log(sideLabel(w)+"が《天の名の下に》で《"+x.name+"》をコストなしで召喚。");onSummon(x,w);finishSpell(sourceSpell,w);
+}
+
+function discardRandom(w){
+  if(!G[w].hand.length){log(sideLabel(w)+"の手札がないため、ハンデス効果は何も起こりませんでした。");render();return false;}
+  const i=Math.floor(Math.random()*G[w].hand.length);
+  const x=G[w].hand.splice(i,1)[0];
+  prepareCardForHandOrGrave(x);
+  G[w].grave.push(x);
+  log(sideLabel(w)+"の手札から《"+x.name+"》がランダムに墓地へ送られました。");
+  render();return true;
+}
+function changeTempATK(c,n){c.a+=n;c.tempA+=n;}
+function changeTempHP(c,n){c.h+=n;c.tempH+=n;if(c.h<=0){const own=G.you.field.includes(c)?"you":"cpu";destroyMonster(c,own);} }
+
+function destroyLand(c,owner){
+  const i=G[owner].lands.indexOf(c);if(i<0)return;
+  G[owner].lands.splice(i,1);
+  prepareCardForHandOrGrave(c);
+  G[owner].grave.push(c);
+  log(sideLabel(owner)+"の流脈《"+c.name+"》を墓地へ送りました。");
+  render();
+}
+
+function bounceMonster(c){
+  const owner=G.you.field.includes(c)?"you":"cpu";
+  const i=G[owner].field.indexOf(c);if(i<0)return;
+  G[owner].field.splice(i,1);
+  prepareCardForHandOrGrave(c);
+  G[owner].hand.push(c);
+  log("《"+c.name+"》を手札に戻しました。");
+}
+function bounceAll(owner){G[owner].field.filter(x=>x.t==="monster").slice().forEach(x=>bounceMonster(x));}
+
+function moveToFaceDownLand(c,owner){
+  const i=G[owner].field.indexOf(c);if(i<0)return;
+  G[owner].field.splice(i,1);
+  prepareCardForLandZone(c,true);
+  G[owner].lands.push(c);
+  log("《"+c.name+"》を裏向き流脈として置きました。");
+}
+
+function moveBetweenToFaceDownLand(c,fromOwner,toOwner){
+  const i=G[fromOwner].field.indexOf(c);if(i<0)return;
+  G[fromOwner].field.splice(i,1);
+  prepareCardForLandZone(c,true);
+  G[toOwner].lands.push(c);
+  log(sideLabel(toOwner)+"の流脈として《"+c.name+"》が裏向きで置かれました。");
+  render();
+}
+function dealDamage(target,amount,source,targetOwner){
+  if(!amount||amount<=0)return;
+  if(target==="face"){
+    const p=G[targetOwner];let actual=amount;
+    if(p.damagePrevent>0){const prevented=Math.min(actual,p.damagePrevent);p.damagePrevent-=prevented;actual-=prevented;if(prevented)log(sideLabel(targetOwner)+"へのダメージを"+prevented+"軽減しました。");}
+    if(actual>0){p.hp-=actual;showDamagePop(targetOwner,actual);log("《"+source+"》で"+sideLabel(targetOwner)+"に"+actual+"ダメージ。");}
+    check();render();return;
+  }
+  if(target.t!=="monster")return;
+  target.h-=amount;log("《"+source+"》で《"+target.name+"》に"+amount+"ダメージ。");showCardDamagePop(target.id,amount);
+  if(target.h<=0){const owner=G.you.field.includes(target)?"you":"cpu";destroyMonster(target,owner);}else {check();render();}
+}
+function showDamagePop(owner,amount){const pop=el(owner==="you"?"youDmgPop":"cpuDmgPop");if(!pop||!amount)return;pop.textContent="-"+amount;pop.classList.remove("active");void pop.offsetWidth;pop.classList.add("active");setTimeout(()=>pop.classList.remove("active"),1000);}
+function showCardDamagePop(id,amount){if(!amount)return;document.querySelectorAll('.card').forEach(d=>{if(d.dataset.id===id){const p=document.createElement('div');p.className='card-dmg-pop';p.textContent='-'+amount;d.appendChild(p);setTimeout(()=>p.remove(),1000);}});}
+
+
+function destroyMonster(m,owner){
+  const idx=G[owner].field.indexOf(m);if(idx<0)return false;
+
+  if(m.indestructible){
+    m.indestructible=false;
+    if(m.h<=0)m.h=1;
+    log("《"+m.name+"》は《加護》により破壊されませんでした。");
+    render();
+    return false;
+  }
+
+  G[owner].field.splice(idx,1);
+
+  if(G[owner].returnAllOnDeath || m.returnOnDeath || m.effectKey==="returnOnDeath"){
+    prepareCardForHandOrGrave(m);
+    G[owner].hand.push(m);
+    log("《"+m.name+"》は墓地へ送られる代わりに手札へ戻りました。");
+  }else if(G[owner].soulNever || m.soulNever || m.effectKey==="faceDownLandOnDeath"){
+    prepareCardForLandZone(m,true);
+    G[owner].lands.push(m);
+    log("《"+m.name+"》は墓地へ送られる代わりに裏向き流脈になりました。");
+  }else{
+    prepareCardForHandOrGrave(m);
+    G[owner].grave.push(m);
+    log("《"+m.name+"》は破壊され墓地へ送られました。");
+  }
+
+  check();render();
+  return true;
+}
+function selectAttacker(c){
+  const w=activeSide(); if(G.blockPending)return toast("先にブロック処理を完了してください"); if(G.phase!=="BATTLE PHASE")return toast("まずバトルフェイズへ移行してください"); if(!G[w].field.includes(c)||c.t!=="monster")return;
+  if(c.summon)return toast("召喚したターンは攻撃できません");if(c.tapped)return toast("このモンスターは攻撃済みです");if(c.effectKey==="cannotAttack")return toast("このモンスターは攻撃できません");
+  G.selected=c.id;log("《"+c.name+"》を攻撃モンスターとして選択。相手モンスターまたは相手LPを選択してください。");render();
+}
+function attackAllowedByTrap(a,w){
+  const opp=opponentSide(w);
+  if(G[opp].counterAttack>0){G[opp].counterAttack--;destroyMonster(a,w);G.selected=null;log(sideLabel(opp)+"の《水鏡》で攻撃モンスター《"+a.name+"》が破壊されました。");render();return false;}
+  return true;
+}
+function prepareAttackCost(a,w,next){
+  if(a.effectKey!=="sacLandOnAttack") { next(); return; }
+  if(!G[w].lands.length){toast("このモンスターは攻撃時に流脈を1枚墓地へ送る必要があります");return;}
+  chooseFromList(G[w].lands,"攻撃コストとして墓地へ送る自分の流脈を1枚選択",land=>{destroyLand(land,w);next();});
+}
+
+function selectTarget(c){
+  const w=activeSide(),opp=opponentSide(w);if(G.blockPending||G.phase!=="BATTLE PHASE"||!G.selected)return;if(!G[opp].field.includes(c)||c.t!=="monster")return;
+  const a=findById(G.selected);if(!a||!G[w].field.includes(a))return;
+  if(!attackAllowedByTrap(a,w))return;
+  prepareAttackCost(a,w,()=>{
+    tapAsUsed(a);
+    if(a.effectKey==="hasteBurn3")dealDamage("face",3,a.name,opp);
+    log(sideLabel(w)+"の《"+a.name+"》が《"+c.name+"》を攻撃。");
+    resolveMonsterCombat(a,c,w,opp);G.selected=null;render();
+  });
+}
+
+function declareDirectAttack(){
+  const w=activeSide(),opp=opponentSide(w);if(G.phase!=="BATTLE PHASE"||!G.selected||G.blockPending)return;
+  const a=findById(G.selected);if(!a||!G[w].field.includes(a)||a.t!=="monster"||a.summon||a.tapped)return;
+  if(a.effectKey==="cannotAttackFace")return toast("このモンスターは相手プレイヤーを攻撃できません");
+  if(!attackAllowedByTrap(a,w))return;
+  prepareAttackCost(a,w,()=>continueDirectAttack(a,w,opp));
+}
+function continueDirectAttack(a,w,opp){
+  if(!G[w].field.includes(a)||G.over)return;
+  tapAsUsed(a);
+  if(a.effectKey==="hasteBurn3")dealDamage("face",3,a.name,opp);
+  const blockers=G[opp].field.filter(x=>canBlock(a,x,w,opp));
+  if(!blockers.length){resolveDirectAttack(a,w,opp);return;}
+  G.blockPending={attacker:a.id,attackerOwner:w,defender:opp};log(sideLabel(w)+"の《"+a.name+"》が直接攻撃を宣言。"+sideLabel(opp)+"はブロックするか選択してください。");toast(sideLabel(opp)+"はアンタップ状態のモンスターを選択してブロックできます。");render();
+}
+
+function canBlock(attacker,blocker,attackerOwner,defender){
+  if(blocker.t!=="monster"||blocker.tapped)return false;
+  if(attacker.effectKey==="unblockable"||G[attackerOwner].teamUnblockable)return false;
+  if(attacker.flying&&!blocker.flying)return false;
+  if(attacker.effectKey==="flying"&&!blocker.flying)return false;
+  return true;
+}
+function chooseBlocker(blocker){
+  if(!G.blockPending)return;const bp=G.blockPending,a=findById(bp.attacker);if(!a)return;
+  if(!canBlock(a,blocker,bp.attackerOwner,bp.defender))return toast("そのモンスターではブロックできません");
+  tapAsUsed(blocker);
+  if(blocker.effectKey==="blockHpPlus2")changeTempHP(blocker,2);
+  log(sideLabel(bp.defender)+"の《"+blocker.name+"》がブロック。");
+  resolveMonsterCombat(a,blocker,bp.attackerOwner,bp.defender);G.blockPending=null;G.selected=null;render();
+}
+
+function resolveMonsterCombat(attacker,blocker,attackerOwner,blockerOwner){
+  const aatk=attackPower(attacker,attackerOwner),batk=attackPower(blocker,blockerOwner);
+  const aHpBefore=attacker.h,bHpBefore=blocker.h;
+
+  attacker.h=Math.max(0,aHpBefore-batk);
+  blocker.h=Math.max(0,bHpBefore-aatk);
+
+  log("戦闘：《"+attacker.name+"》が《"+blocker.name+"》に"+aatk+"ダメージ、《"+blocker.name+"》が《"+attacker.name+"》に"+batk+"ダメージ。");
+  showCardDamagePop(attacker.id,batk);
+  showCardDamagePop(blocker.id,aatk);
+
+  const attackerDT=attacker.effectKey==="deathtouch"||attacker.deathtouch||G[attackerOwner].teamDeathtouch;
+  const blockerDT=blocker.effectKey==="deathtouch"||blocker.deathtouch||G[blockerOwner].teamDeathtouch;
+  if(attackerDT&&aatk>0&&!blocker.indestructible)blocker.h=0;
+  if(blockerDT&&batk>0&&!attacker.indestructible)attacker.h=0;
+
+  const attackerDies=attacker.h<=0;
+  const blockerDies=blocker.h<=0;
+
+  if(attackerDies)destroyMonster(attacker,attackerOwner);
+  if(blockerDies)destroyMonster(blocker,blockerOwner);
+
+  // バトルに勝っただけではアンタップしない。
+  // 《クラッシュ・ビートル》のように専用効果を持つカードだけアンタップする。
+  if(attacker.effectKey==="untapOnKill" &&
+     G[attackerOwner].field.includes(attacker) &&
+     !G[blockerOwner].field.includes(blocker)){
+    untapByEffect(attacker);
+    log("《"+attacker.name+"》の効果でアンタップしました。");
+  }
+
+  check();render();
+}
+function resolveDirectAttack(a,w,opp){tapAsUsed(a);dealDamage("face",attackPower(a,w),a.name,opp);G.selected=null;G.blockPending=null;render();}
+function noBlock(){if(!G.blockPending)return;const bp=G.blockPending,a=findById(bp.attacker);if(!a)return;log(sideLabel(bp.defender)+"はブロックしないことを選択。");resolveDirectAttack(a,bp.attackerOwner,bp.defender);}
+
+function clickCard(where,i,c){
+  if(G.over)return;
+  showInspector(c);
+  const controllable=((where==="youField"||where==="cpuField")&&c.t==="monster")||where==="youLand"||where==="cpuLand";
+  G.uiSelected=controllable?c.id:null;
+  const owner=(where==="hand"||where==="youField"||where==="youLand")?"you":"cpu";
+  if(G.blockPending){
+    if(owner===G.blockPending.defender&&where===(owner==="you"?"youField":"cpuField")&&c.t==="monster")chooseBlocker(c);
+    else toast(sideLabel(G.blockPending.defender)+"はブロックするモンスターを選択してください");return;
+  }
+  const ownTurn=G.turn===owner,instant=c.timing==="instant";
+  if(where==="hand"||where==="cpuHand"){
+    if(!ownTurn&&!instant)return toast(sideLabel(owner)+"のターンでは操作できません");
+    if(c.t==="land"){if(!ownTurn)return toast("相手の流脈は相手ターンにのみ置けます");playLand(i,false,owner);}
+    else if(ownTurn&&G.phase==="MAIN PHASE"&&!G[owner].land&&!G.stack.length)openPlayModal(i,c,owner);
+    else playCard(i,owner);
+  } else if(where==="youField"||where==="cpuField"){
+    if(c.t==="spell"){
+      if(ownTurn||instant)activateSpell(c,owner); else toast("自分のターンまたは高速詠唱タイミングでのみ発動できます");
+    } else if(ownTurn){
+      if(G.phase==="BATTLE PHASE")selectAttacker(c);
+      else{
+        // メインフェイズではカード本体クリックは詳細確認のみ。
+        // クリックしたカードの下部に操作アイコンを表示する。
+        render();
+      }
+    } else{
+      selectTarget(c);
+      if(G.phase!=="BATTLE PHASE")render();
+    }
+  } else if(where==="youLand"||where==="cpuLand"){render();}
+}
+function closeModal(){el("modal").style.display="none";G.action=null;render();}
+function addTarget(label,fn){const b=document.createElement("button");b.textContent=label;b.onclick=fn;el("targets").appendChild(b);}
+function sendSpellToGrave(c,w){finishSpell(c,w);}
+
+
+function resetTurnEndEffects(endingSide){
+  for(const side of ["you","cpu"]){
+    const p=G[side];
+    p.manaPool=[];
+    p.canAttackUntapped=false;
+    p.teamUnblockable=false;
+    p.teamDeathtouch=false;
+    p.returnAllOnDeath=false;
+    p.soulNever=false;
+
+    p.field.forEach(c=>{
+      if(c.t!=="monster")return;
+      const d=DB[c.name]||{};
+      const baseA=Number(d.a)||c.baseA||0;
+      const baseH=Number(d.h)||c.baseH||c.max||0;
+
+      if(c.tempA)c.a=baseA;
+      c.tempA=0;
+      c.baseA=baseA;
+
+      // そのターン中に受けたモンスターのダメージはターン終了時に消える。
+      c.baseH=baseH;
+      c.max=baseH;
+      c.h=baseH;
+      c.tempH=0;
+
+      c.indestructible=false;
+      c.returnOnDeath=c.effectKey==="returnOnDeath";
+      c.soulNever=false;
+      c.deathtouch=c.effectKey==="deathtouch";
+    });
+  }
+
+  // 「自分のターン終了時にアンタップ」の固有効果だけを処理。
+  const ending=G[endingSide];
+  ending.field.forEach(c=>{
+    if(c.effectKey==="untapSelfEnd")untapByEffect(c);
+  });
+  if(ending.field.some(c=>c.effectKey==="untapAllEnd")){
+    ending.field.forEach(c=>{if(c.t==="monster")untapByEffect(c);});
+  }
+}
+function check(){if(G.you.hp<=0){G.you.hp=0;G.over=true;toast("PLAYER 2 WINS");}if(G.cpu.hp<=0){G.cpu.hp=0;G.over=true;toast("PLAYER 1 WINS");}}
+
+el("cpuHp").onclick=()=>{if(activeSide()==="you")declareDirectAttack();};
+el("youHp").onclick=()=>{if(activeSide()==="cpu")declareDirectAttack();};
+el("noBlockBtn").onclick=noBlock;el("drawBtn").onclick=playerDraw;el("passBtn").onclick=passPriority;
+el("youDeckZone").onclick=()=>toast("山札の中身を見ることはできません");el("cpuDeckZone").onclick=()=>toast("山札の中身を見ることはできません");
+el("youGraveZone").onclick=()=>showGrave("you");el("cpuGraveZone").onclick=()=>showGrave("cpu");
+function showGrave(w){const list=G[w].grave;if(!list.length)return toast(sideLabel(w)+"の墓地は空です");el("modalTitle").textContent=sideLabel(w)+"の墓地（"+list.length+"枚）";el("targets").innerHTML="";list.slice().reverse().slice(0,20).forEach(c=>addTarget(c.name+" / "+typeJP(c.t),()=>{showInspector(c);}));el("modal").style.display="flex";}
+el("battleBtn").onclick=()=>{if(G.over)return;if(G.stack.length)return toast("スタックをすべて解決してからバトルフェイズへ移行してください");if(G.phase==="MAIN PHASE"){G.phase="BATTLE PHASE";G.selected=null;log(sideLabel(G.turn)+"がバトルフェイズへ移行。");render();}};
+el("endBtn").onclick=()=>{if(G.over)return;if(G.stack.length)return toast("スタックをすべて解決してからターンを終了してください");resetTurnEndEffects(G.turn);G.selected=null;G.uiSelected=null;G.blockPending=null;G.action=null;G.turn=opponentSide(G.turn);G.turnNo++;begin(G.turn);render();};
+el("newBtn").onclick=openDeckSetup;
+
+
+const mobileHandToggle=document.getElementById("mobileHandToggle");
+if(mobileHandToggle){
+  mobileHandToggle.addEventListener("click",()=>{
+    document.body.classList.toggle("hand-collapsed");
+    mobileHandToggle.textContent=document.body.classList.contains("hand-collapsed")?"手札を開く":"手札を縮小";
+  });
+}
+
+fillDeckSelectors();
+
+</script>
+
+<script src="pwa.js"></script>
+
+</body>
+</html>
